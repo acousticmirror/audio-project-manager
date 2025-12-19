@@ -1,12 +1,22 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { auth } from '@clerk/nextjs/server';
 
 const prisma = new PrismaClient();
 
-// GET all projects
+// GET all projects for current user
 export async function GET() {
   try {
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const projects = await prisma.project.findMany({
+      where: {
+        userId: userId
+      },
       include: {
         sessions: {
           include: {
@@ -27,9 +37,16 @@ export async function GET() {
 // POST new project
 export async function POST(request) {
   try {
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const project = await prisma.project.create({
       data: {
+        userId: userId,
         name: body.name,
         client: body.client || null,
         status: body.status,

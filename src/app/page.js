@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react';
+import { SignOutButton, useUser } from '@clerk/nextjs';
 import ProjectDetail from './ProjectDetail';
 
 export default function Home() {
+  const { user } = useUser();
   const [showForm, setShowForm] = useState(false);
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
@@ -101,12 +103,28 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-700 p-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold text-white mb-2">
-          Audio Project Manager
-        </h1>
-        <p className="text-gray-200 mb-8">
-          Track your audio projects, sessions, and takes all in one place.
-        </p>
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-2">
+              Audio Project Manager
+            </h1>
+            <p className="text-gray-200">
+              Track your audio projects, sessions, and takes all in one place.
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            {user && (
+              <div className="text-white text-sm">
+                {user.firstName || user.emailAddresses[0].emailAddress}
+              </div>
+            )}
+            <SignOutButton>
+              <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition">
+                Sign Out
+              </button>
+            </SignOutButton>
+          </div>
+        </div>
         
         <div className="bg-gray-600 rounded-lg shadow p-6">
           <div className="flex justify-between items-center mb-4">

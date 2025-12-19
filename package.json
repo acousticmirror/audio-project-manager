@@ -2,14 +2,15 @@
   "name": "audio-project-manager",
   "version": "0.1.0",
   "private": true,
-"scripts": {
-  "dev": "next dev",
-"build": "prisma generate && prisma migrate deploy && next build",
-  "start": "next start",
-  "lint": "next lint",
-  "postinstall": "prisma generate"
-},
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && prisma migrate deploy && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "postinstall": "prisma generate"
+  },
   "dependencies": {
+    "@clerk/nextjs": "^6.36.4",
     "@prisma/client": "^6.1.0",
     "formidable": "^3.5.4",
     "next": "16.1.0",
