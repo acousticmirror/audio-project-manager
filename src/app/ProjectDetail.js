@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react';
+import SessionDetail from './SessionDetail';
 
 export default function ProjectDetail({ project, onBack, onAddSession }) {
   const [showSessionForm, setShowSessionForm] = useState(false);
+  const [selectedSession, setSelectedSession] = useState(null);
   const [sessionData, setSessionData] = useState({
     date: new Date().toISOString().split('T')[0],
     duration: '',
@@ -15,7 +17,6 @@ export default function ProjectDetail({ project, onBack, onAddSession }) {
     e.preventDefault();
     const newSession = {
       ...sessionData,
-      id: Date.now(),
       projectId: project.id
     };
     onAddSession(newSession);
@@ -26,6 +27,26 @@ export default function ProjectDetail({ project, onBack, onAddSession }) {
       gearUsed: ''
     });
     setShowSessionForm(false);
+  };
+
+  const handleAddTake = async (takeData) => {
+    try {
+      const response = await fetch('/api/takes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(takeData)
+      });
+      const newTake = await response.json();
+      
+      // Update the selected session with the new take
+      const updatedSession = {
+        ...selectedSession,
+        takes: [...(selectedSession.takes || []), newTake]
+      };
+      setSelectedSession(updatedSession);
+    } catch (error) {
+      console.error('Failed to create take:', error);
+    }
   };
 
   return (
@@ -138,27 +159,40 @@ export default function ProjectDetail({ project, onBack, onAddSession }) {
           ) : (
             <div className="space-y-4">
               {project.sessions.map(session => (
-                <div key={session.id} className="bg-gray-700 border border-gray-500 rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-semibold text-white">
-                      {new Date(session.date).toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}
-                    </h3>
-                    {session.duration && (
-                      <span className="text-gray-300 text-sm">{session.duration} hours</span>
-                    )}
-                  </div>
-                  {session.gearUsed && (
-                    <p className="text-gray-200 mb-2">
-                      <span className="font-medium">Gear:</span> {session.gearUsed}
-                    </p>
-                  )}
-                  {session.engineerNotes && (
-                    <p className="text-gray-100 mt-2">{session.engineerNotes}</p>
+                <div key={session.id}>
+                  {selectedSession?.id === session.id ? (
+                    <SessionDetail
+                      session={selectedSession}
+                      onBack={() => setSelectedSession(null)}
+                      onAddTake={handleAddTake}
+                    />
+                  ) : (
+                    <div 
+                      onClick={() => setSelectedSession(session)}
+                      className="bg-gray-700 border border-gray-500 rounded-lg p-4 hover:border-purple-500 transition cursor-pointer"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-lg font-semibold text-white">
+                          {new Date(session.date).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </h3>
+                        {session.duration && (
+                          <span className="text-gray-300 text-sm">{session.duration} hours</span>
+                        )}
+                      </div>
+                      {session.gearUsed && (
+                        <p className="text-gray-200 mb-2">
+                          <span className="font-medium">Gear:</span> {session.gearUsed}
+                        </p>
+                      )}
+                      <p className="text-gray-400 text-sm">
+                        {session.takes?.length || 0} take{session.takes?.length !== 1 ? 's' : ''}
+                      </p>
+                    </div>
                   )}
                 </div>
               ))}
