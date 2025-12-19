@@ -48,6 +48,14 @@ export default function ProjectDetail({ project, onBack, onAddSession }) {
       console.error('Failed to create take:', error);
     }
   };
+  const handleDeleteTake = (takeId) => {
+    // Update the selected session by removing the deleted take
+    const updatedSession = {
+      ...selectedSession,
+      takes: selectedSession.takes.filter(t => t.id !== takeId)
+    };
+    setSelectedSession(updatedSession);
+  };
 
   return (
     <div className="min-h-screen bg-gray-700 p-8">
@@ -162,10 +170,11 @@ export default function ProjectDetail({ project, onBack, onAddSession }) {
                 <div key={session.id}>
                   {selectedSession?.id === session.id ? (
                     <SessionDetail
-                      session={selectedSession}
-                      onBack={() => setSelectedSession(null)}
-                      onAddTake={handleAddTake}
-                    />
+  session={selectedSession}
+  onBack={() => setSelectedSession(null)}
+  onAddTake={handleAddTake}
+  onDeleteTake={handleDeleteTake}
+/>
                   ) : (
                     <div 
                       onClick={() => setSelectedSession(session)}

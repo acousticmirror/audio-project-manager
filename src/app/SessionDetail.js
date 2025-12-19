@@ -2,14 +2,48 @@
 
 import { useState } from 'react';
 
-export default function SessionDetail({ session, onBack, onAddTake }) {
+export default function SessionDetail({ session, onBack, onAddTake, onDeleteTake }) {
   const [showTakeForm, setShowTakeForm] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [takeData, setTakeData] = useState({
     name: '',
     versionNumber: '',
     notes: '',
-    status: 'keep'
+    status: 'keep',
+    fileUrl: null
   });
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check if it's an audio file
+    if (!file.type.startsWith('audio/')) {
+      alert('Please upload an audio file');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+      if (data.fileUrl) {
+        setTakeData({...takeData, fileUrl: data.fileUrl});
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Failed to upload file');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -22,9 +56,31 @@ export default function SessionDetail({ session, onBack, onAddTake }) {
       name: '',
       versionNumber: '',
       notes: '',
-      status: 'keep'
+      status: 'keep',
+      fileUrl: null
     });
     setShowTakeForm(false);
+  };
+
+  const handleDelete = async (takeId) => {
+    if (!confirm('Are you sure you want to delete this take? This cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/takes/${takeId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        onDeleteTake(takeId);
+      } else {
+        alert('Failed to delete take');
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+      alert('Failed to delete take');
+    }
   };
 
   const getStatusColor = (status) => {
@@ -126,6 +182,21 @@ export default function SessionDetail({ session, onBack, onAddTake }) {
 
           <div>
             <label className="block text-sm font-medium text-white mb-1">
+              Audio File (WAV, MP3, OGG recommended)
+            </label>
+            <input
+              type="file"
+              accept="audio/*"
+              onChange={handleFileUpload}
+              disabled={uploading}
+              className="w-full px-3 py-2 bg-gray-900 text-white border border-gray-600 rounded focus:ring-2 focus:ring-purple-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-purple-600 file:text-white hover:file:bg-purple-700"
+            />
+            {uploading && <p className="text-blue-400 text-sm mt-1">Uploading...</p>}
+            {takeData.fileUrl && <p className="text-green-400 text-sm mt-1">✓ File uploaded</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-1">
               Notes
             </label>
             <textarea
@@ -139,7 +210,8 @@ export default function SessionDetail({ session, onBack, onAddTake }) {
 
           <button
             type="submit"
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition font-medium"
+            disabled={uploading}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition font-medium disabled:opacity-50"
           >
             Add Take
           </button>
@@ -153,18 +225,35 @@ export default function SessionDetail({ session, onBack, onAddTake }) {
           {session.takes.map(take => (
             <div key={take.id} className="bg-gray-800 rounded p-3 border border-gray-600">
               <div className="flex justify-between items-start mb-2">
-                <div>
+                <div className="flex-1">
                   <h5 className="text-white font-medium">{take.name}</h5>
                   {take.versionNumber && (
                     <p className="text-gray-400 text-sm">Version: {take.versionNumber}</p>
                   )}
                 </div>
-                <span className={`px-2 py-1 ${getStatusColor(take.status)} text-white rounded text-xs capitalize`}>
-                  {take.status}
-                </span>
+                <div className="flex gap-2 items-center">
+                  <span className={`px-2 py-1 ${getStatusColor(take.status)} text-white rounded text-xs capitalize`}>
+                    {take.status}
+                  </span>
+                  <button
+                    onClick={() => handleDelete(take.id)}
+                    className="text-red-400 hover:text-red-300 text-sm px-2 py-1 hover:bg-red-900/20 rounded transition"
+                    title="Delete take"
+                  >
+                    🗑️
+                  </button>
+                </div>
               </div>
               {take.notes && (
                 <p className="text-gray-300 text-sm mt-2">{take.notes}</p>
+              )}
+              {take.fileUrl && (
+                <div className="mt-3">
+                  <audio controls className="w-full h-10">
+                    <source src={take.fileUrl} />
+                    Your browser does not support the audio element.
+                  </audio>
+                </div>
               )}
             </div>
           ))}
